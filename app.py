@@ -332,11 +332,12 @@ def tratar_dados(df: pd.DataFrame) -> pd.DataFrame:
                      .transform(lambda x: "Separado" if (x > 0).any() else "A Separar")
 
     # Manter linha mais representativa por requisição (prefere não-PROPRIO)
-    def manter_nao_proprio(gr):
-        nao_proprio = gr[gr['Estoque'] != 'PROPRIO']
-        return nao_proprio.iloc[0] if not nao_proprio.empty else gr.iloc[0]
-
-    df = df.groupby('Código Requisição', group_keys=False).apply(manter_nao_proprio)
+    # Manter linha mais representativa por requisição (prefere não-PROPRIO)
+    # Evita groupby().apply() que em pandas recentes move a coluna para index
+    df['_proprio_sort'] = (df['Estoque'] == 'PROPRIO').astype(int)
+    df = (df.sort_values(['Código Requisição', '_proprio_sort'])
+            .drop_duplicates(subset=['Código Requisição'], keep='first')
+            .drop(columns=['_proprio_sort']))
 
     # Cidade
     if col_cidade and col_cidade in df.columns:
