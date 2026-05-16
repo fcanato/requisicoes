@@ -683,6 +683,12 @@ if df_filtrado.empty:
 # ========================
 # KPIs PRINCIPAIS
 # ========================
+if "Código Requisição" not in df_filtrado.columns:
+    st.error("❌ Coluna 'Código Requisição' não encontrada no banco de dados.")
+    with st.expander("🔍 Diagnóstico — colunas disponíveis (copie e envie ao suporte)"):
+        st.code(repr(list(df_filtrado.columns)))
+    st.stop()
+
 total_req = df_filtrado["Código Requisição"].nunique()
 total_separado = df_filtrado[df_filtrado["Status"] == "Separado"]["Código Requisição"].nunique()
 total_a_separar = df_filtrado[df_filtrado["Status"] == "A Separar"]["Código Requisição"].nunique()
