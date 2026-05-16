@@ -285,7 +285,8 @@ def calcular_prazo(row, hoje: datetime) -> dict:
 
 def tratar_dados(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df.columns = [x.strip() for x in df.columns]
+    # Normaliza encoding dos nomes de colunas (NFC) — resolve diferenças NFD/NFC vindas do Excel
+    df.columns = [unicodedata.normalize("NFC", str(x).strip()) for x in df.columns]
 
     # Detectar coluna de cidade antes de filtrar colunas
     col_cidade = detectar_coluna_cidade(df)
@@ -684,9 +685,10 @@ if df_filtrado.empty:
 # KPIs PRINCIPAIS
 # ========================
 if "Código Requisição" not in df_filtrado.columns:
-    st.error("❌ Coluna 'Código Requisição' não encontrada no banco de dados.")
-    with st.expander("🔍 Diagnóstico — colunas disponíveis (copie e envie ao suporte)"):
-        st.code(repr(list(df_filtrado.columns)))
+    st.error(
+        "❌ O banco de dados está com estrutura incompleta (coluna 'Código Requisição' ausente). "
+        "Faça o upload do arquivo **geral.xlsx** novamente para reconstruir a tabela."
+    )
     st.stop()
 
 total_req = df_filtrado["Código Requisição"].nunique()
