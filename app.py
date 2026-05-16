@@ -189,8 +189,13 @@ def aplicar_css():
 # ========================
 # Banco de Dados
 # ========================
+_COLUNAS_OBRIGATORIAS = {"Código Requisição", "Status", "Cidade", "Volante"}
+
 def salvar_no_banco(df: pd.DataFrame, cidade: str | None = None):
     """Salva dados no banco. Se cidade fornecida, substitui apenas essa cidade (multi-cidade seguro)."""
+    faltando = _COLUNAS_OBRIGATORIAS - set(df.columns)
+    if faltando:
+        raise ValueError(f"DataFrame sem colunas obrigatórias: {faltando}")
     engine = get_engine()
     if cidade:
         # Partial update: apaga só a cidade e insere novos dados
@@ -200,10 +205,12 @@ def salvar_no_banco(df: pd.DataFrame, cidade: str | None = None):
                 conn.commit()
             except Exception:
                 pass  # Tabela pode não existir ainda
-        df.to_sql("movimentacoes", engine, if_exists="append", index=False, method="multi")
+        df.to_sql("movimentacoes", engine, if_exists="append", index=False,
+                  method="multi", chunksize=500)
     else:
         # Admin: substitui tudo
-        df.to_sql("movimentacoes", engine, if_exists="replace", index=False, method="multi")
+        df.to_sql("movimentacoes", engine, if_exists="replace", index=False,
+                  method="multi", chunksize=500)
 
 
 def _norm_col(s: str) -> str:
@@ -526,9 +533,14 @@ with st.sidebar:
             if st.button("💾 Salvar", use_container_width=True):
                 # cidade_restrita=None significa acesso a todas → salva sem filtrar por cidade
                 cidade_para_salvar = _cidade_restrita  # None = substitui tudo; str = substitui só a cidade
-                salvar_no_banco(df_tratado, cidade=cidade_para_salvar)
-                st.success("Salvo!")
-                st.rerun()
+                try:
+                    salvar_no_banco(df_tratado, cidade=cidade_para_salvar)
+                    st.success("Salvo!")
+                    st.rerun()
+                except ValueError as e:
+                    st.error(f"❌ Arquivo inválido: {e}")
+                except Exception as e:
+                    st.error(f"❌ Erro ao salvar: {e}")
         with col_b2:
             st.download_button(
                 label="📥 Baixar",
