@@ -54,14 +54,25 @@ def get_engine():
     url = _get_database_url()
     if url.startswith("sqlite"):
         return create_engine(url, connect_args={"check_same_thread": False})
-    return create_engine(url, pool_pre_ping=True, pool_recycle=300)
+    # PostgreSQL (Supabase): força SSL e configura pool
+    return create_engine(
+        url,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        connect_args={"sslmode": "require"},
+    )
 
 @st.cache_resource(show_spinner=False)
 def get_usuarios_engine():
     url = _get_usuarios_url()
     if url.startswith("sqlite"):
         return create_engine(url, connect_args={"check_same_thread": False})
-    return create_engine(url, pool_pre_ping=True, pool_recycle=300)
+    return create_engine(
+        url,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        connect_args={"sslmode": "require"},
+    )
 
 # ── Placeholder de parâmetros (%s para PG, ? para SQLite) ────────────
 def ph() -> str:
