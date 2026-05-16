@@ -206,12 +206,35 @@ def salvar_no_banco(df: pd.DataFrame, cidade: str | None = None):
         df.to_sql("movimentacoes", engine, if_exists="replace", index=False, method="multi")
 
 
+def _norm_col(s: str) -> str:
+    """Normaliza nome de coluna: remove acentos, lowercase, sem espaços extras."""
+    return unicodedata.normalize("NFD", str(s)).encode("ascii", "ignore").decode("ascii").strip().lower()
+
+# Nomes canônicos esperados das colunas
+_COLUNAS_CANONICAS = [
+    'Data/Hora Empenho', 'Código Requisição', 'Id Volante', 'Volante',
+    'Código do Produto', 'Descrição do Produto', 'Qtde Atendida',
+    'Qtde Empenhada', 'Qtde Requisitada', 'Estoque Físico', 'Estoque',
+    'dia_semana', 'Status', 'Status_Prazo', 'Cidade', 'dias_restantes',
+]
+_MAP_NORM_CANONICO = {_norm_col(c): c for c in _COLUNAS_CANONICAS}
+
+
 def carregar_dados():
     engine = get_engine()
-    return pd.read_sql(
+    df = pd.read_sql(
         "SELECT * FROM movimentacoes", engine,
         parse_dates=["Data/Hora Empenho"],
     )
+    # Corrige nomes de colunas que possam ter vindo com encoding/case diferente do PostgreSQL
+    rename = {
+        col: _MAP_NORM_CANONICO[_norm_col(col)]
+        for col in df.columns
+        if _norm_col(col) in _MAP_NORM_CANONICO and col != _MAP_NORM_CANONICO[_norm_col(col)]
+    }
+    if rename:
+        df = df.rename(columns=rename)
+    return df
 
 
 # ========================
