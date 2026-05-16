@@ -1,0 +1,13 @@
+# Bancos de dados — NÃO versionar, persistem no servidor
+*.db
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Arquivos Excel (dados ficam no Supabase, não no repositório)
+*.xlsx
+
+# Streamlit
+.streamlit/secrets.toml
